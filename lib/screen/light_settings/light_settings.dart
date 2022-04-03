@@ -28,85 +28,83 @@ class _LightSettingsState extends State<LightSettings> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => sl.get<LightSettingsCubit>(),
-      child: Builder(
-        builder: (context) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Light settings')),
-            body: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  BlocBuilder<LightSettingsCubit, LightSettingsState>(
-                    buildWhen: (p,n) => n is LightSettingsDisplayColor,
-                    builder: (context, state) {
-                      late Color currentColor;
-                      if(state is LightSettingsDisplayColor) {
-                        currentColor = state.color;
-                      }else {
-                        currentColor = context.read<LightSettingsCubit>().currentColor;
-                      }
-                      return ColorPicker(
-                        pickerColor: currentColor,
-                        onColorChanged: (Color color) {
-                          BlocProvider.of<LightSettingsCubit>(context).onColorSelected(color);
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 50),
-                    child: TextField(
-                      controller: ipFieldController,
+      create: (context) => sl.get<LightSettingsCubit>()..initializeCubit(),
+      child: Builder(builder: (context) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Light settings')),
+          body: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: BlocBuilder<LightSettingsCubit, LightSettingsState>(
+                      buildWhen: (p, n) => n is LightSettingsDeviceManagerStateChange,
+                      builder: (context, state) {
+                        String currentState = "Unknown";
+                        if (state is LightSettingsDeviceManagerStateChange) {
+                          currentState = state.currentState.name;
+                        }
+                        return Text(
+                          currentState,
+                          style: const TextStyle(color: Colors.blue, fontSize: 15, fontWeight: FontWeight.w500),
+                        );
+                      },
                     ),
                   ),
-                  const SizedBox(height: 5),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ElevatedButton(
-                        child: const Text('connect'),
-                        onPressed: () {
-                          BlocProvider.of<LightSettingsCubit>(context).init(ipFieldController.text);
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        child: const Text('send'),
-                        onPressed: () {
-                          BlocProvider.of<LightSettingsCubit>(context).send();
-                        },
-                      ),
-                    ],
+                ),
+                BlocBuilder<LightSettingsCubit, LightSettingsState>(
+                  buildWhen: (p, n) => n is LightSettingsDisplayColor,
+                  builder: (context, state) {
+                    late Color currentColor;
+                    if (state is LightSettingsDisplayColor) {
+                      currentColor = state.color;
+                    } else {
+                      currentColor = context.read<LightSettingsCubit>().currentColor;
+                    }
+                    return ColorPicker(
+                      pickerColor: currentColor,
+                      onColorChanged: (Color color) {
+                        BlocProvider.of<LightSettingsCubit>(context).onColorSelected(color);
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  child: TextField(
+                    controller: ipFieldController,
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-
-                      ElevatedButton(
-                        child: const Text('manual init'),
-                        onPressed: () {
-                          BlocProvider.of<LightSettingsCubit>(context).manualInit(ipFieldController.text);
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        child: const Text('manual send'),
-                        onPressed: () {
-                          BlocProvider.of<LightSettingsCubit>(context).manualSend();
-                        },
-                      ),
-                    ],
-                  )
-                ],
-              ),
+                ),
+                const SizedBox(height: 5),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(
+                      child: const Text('connect'),
+                      onPressed: () {
+                        BlocProvider.of<LightSettingsCubit>(context).init(ipFieldController.text);
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      child: const Text('send'),
+                      onPressed: () {
+                        BlocProvider.of<LightSettingsCubit>(context).send();
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ),
-          );
-        }
-      ),
+          ),
+        );
+      }),
     );
   }
 }

@@ -4,10 +4,11 @@
 
 import 'dart:async';
 
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:iot_playground/core/di/injection_container.dart';
+import 'package:iot_playground/core/enum/connection_manager_message.dart';
+import 'package:iot_playground/core/enum/connection_manager_state.dart';
 import 'package:iot_playground/core/model/call_raw_response.dart';
-import 'package:iot_playground/core/model/call_request.dart';
+import 'package:iot_playground/core/model/call_request_raw.dart';
+import 'package:iot_playground/core/model/machine_message.dart';
 import 'package:iot_playground/core/service/call_builder/call_builder.dart';
 import 'package:statemachine/statemachine.dart';
 
@@ -15,17 +16,9 @@ import 'connection_manager_base.dart';
 
 abstract class ConnectionManager {
   void connect(String ip);
-  void requestCall(CallRequest request);
+  void requestCall(CallRequestRaw request);
+  void registerStateChangeListener(String tag, Function(ConnectionManagerState state) listener);
 
-  void manualInit(String ip);
-  void manualSend(List<int> data);
-}
-
-class MachineMessage<T> {
-  final T flag;
-  final dynamic obj;
-
-  const MachineMessage(this.flag, this.obj);
 }
 
 class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionManager {
@@ -41,10 +34,10 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
 
   late MachineMessage<ConnectionManagerMessage> _currentMessage;
 
-  final _callBuilder = sl.get<CallBuilder>();
+  final CallBuilder _callBuilder;
   final callTimeout = const Duration(seconds: 1);
 
-  ConnectionManagerImpl() {
+  ConnectionManagerImpl(this._callBuilder) {
     _machineMessengerSC = StreamController();
     _messengerStream = _machineMessengerSC.stream.asBroadcastStream();
     _messengerSink = _machineMessengerSC.sink;
@@ -71,7 +64,8 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
 
   void setupIdle() {
     idle.onEntry(() {
-      print('IDLE STATE ON ENTER');
+      print('CM IDLE STATE ON ENTER');
+      notifyStateChange(ConnectionManagerState.idle);
     });
     idle.onStream(_messengerStream, (MachineMessage<ConnectionManagerMessage> message) {
       switch (message.flag) {
@@ -81,18 +75,19 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
         case ConnectionManagerMessage.disconnect:
           break;
         case ConnectionManagerMessage.send:
-          denyCallRequest(message as CallRequest);
+          denyCallRequest(message as CallRequestRaw);
           break;
       }
     });
     idle.onExit(() {
-      print('IDLE STATE ON EXIT');
+      print('CM IDLE STATE ON EXIT');
     });
   }
 
   void setupConnecting() {
     connecting.onEntry(() {
-      print('CONNECTING STATE ON ENTER');
+      print('CM CONNECTING STATE ON ENTER');
+      notifyStateChange(ConnectionManagerState.connecting);
       Future.microtask(() async {
         late String ipAddress;
         if(_currentMessage.flag == ConnectionManagerMessage.connect) {
@@ -126,18 +121,19 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
         case ConnectionManagerMessage.disconnect:
           break;
         case ConnectionManagerMessage.send:
-          denyCallRequest(message as CallRequest);
+          denyCallRequest(message as CallRequestRaw);
           break;
       }
     });
     connecting.onExit(() {
-      print('CONNECTING STATE ON EXIT');
+      print('CM CONNECTING STATE ON EXIT');
     });
   }
 
   void setupConnected() {
     connected.onEntry(() {
-      print('CONNECTED STATE ON ENTER');
+      print('CM CONNECTED STATE ON ENTER');
+      notifyStateChange(ConnectionManagerState.connected);
     });
     connected.onStream(_messengerStream, (MachineMessage<ConnectionManagerMessage> message) {
       switch (message.flag) {
@@ -148,18 +144,18 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
         case ConnectionManagerMessage.send:
         //data
         //callback -> CallRawResponse
-          final request = message.obj as CallRequest;
+          final request = message.obj as CallRequestRaw;
           trySend(request);
           break;
       }
     });
     connected.onExit(() {
       resetData();
-      print('CONNECTED STATE ON EXIT');
+      print('CM CONNECTED STATE ON EXIT');
     });
   }
 
-  void trySend(CallRequest request) {
+  void trySend(CallRequestRaw request) {
     Future.microtask(() async {
       var currentTry = 3;
       while(currentTry > 0) {
@@ -180,13 +176,14 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
     });
   }
 
-  void denyCallRequest(CallRequest request) {
+  void denyCallRequest(CallRequestRaw request) {
     request.callback.complete(CallRawResponse.failed());
   }
 
   void setupDisconnected() {
-    print('DISCONNECTED STATE ON ENTER');
     disconnected.onEntry(() {
+      print('CM DISCONNECTED STATE ON ENTER');
+      notifyStateChange(ConnectionManagerState.disconnected);
       Future.delayed(const Duration(seconds: 1), () {
         connecting.enter();
       });
@@ -198,12 +195,12 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
         case ConnectionManagerMessage.disconnect:
           break;
         case ConnectionManagerMessage.send:
-          denyCallRequest(message as CallRequest);
+          denyCallRequest(message as CallRequestRaw);
           break;
       }
     });
     disconnected.onExit(() {
-      print('DISCONNECTED STATE ON EXIT');
+      print('CM DISCONNECTED STATE ON EXIT');
     });
   }
 
@@ -249,26 +246,13 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
   }
 
   @override
-  void requestCall(CallRequest request) {
+  void requestCall(CallRequestRaw request) {
     _dispatchMessage(ConnectionManagerMessage.send, request);
   }
 
   @override
-  void manualInit(String ip) {
-    initializeSocket(ip);
+  void registerStateChangeListener(String tag, Function(ConnectionManagerState state) listener) {
+    registerStateListenerBase(tag, listener);
   }
 
-  @override
-  void manualSend(List<int> data) {
-    //send(data);
-  }
 }
-
-enum ConnectionManagerState {
-  idle,
-  connecting,
-  connected,
-  disconnected
-}
-
-enum ConnectionManagerMessage { connect, send, disconnect }

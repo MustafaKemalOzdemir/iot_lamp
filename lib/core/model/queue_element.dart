@@ -3,12 +3,10 @@
 */
 import 'dart:async';
 
-import 'package:iot_playground/core/enum/call_type.dart';
 import 'package:iot_playground/core/model/call_raw_response.dart';
 
-class CallRequest<T> {
-  final CallType flag;
+class QueueElement {
+  final Future<CallRawResponse> Function() call;
   final Completer<CallRawResponse> callback;
-  final T param;
-  const CallRequest(this.flag, this.callback, this.param);
+  const QueueElement(this.call, this.callback);
 }

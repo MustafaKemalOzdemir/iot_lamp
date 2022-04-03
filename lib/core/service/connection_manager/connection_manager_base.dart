@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:iot_playground/core/enum/connection_manager_state.dart';
 import 'package:iot_playground/core/model/call_raw_response.dart';
 
 class NoDatagramAvailableException implements Exception {}
@@ -20,6 +21,7 @@ abstract class ConnectionManagerBase {
   String get targetAddress => _targetAddress!;
 
   Completer<CallRawResponse>? _callResponseCompleter;
+  final _stateChangeListeners = <String, Function(ConnectionManagerState state)>{};
 
   initializeSocket(String ip) async{
     _targetAddress = ip;
@@ -80,6 +82,16 @@ abstract class ConnectionManagerBase {
   void resetData() {
     _currentData = null;
     _callResponseCompleter = null;
+  }
+
+  void registerStateListenerBase(String tag, Function(ConnectionManagerState state) listener) {
+    _stateChangeListeners[tag] = listener;
+  }
+
+  void notifyStateChange(ConnectionManagerState current) {
+    _stateChangeListeners.forEach((key, value) {
+      value.call(current);
+    });
   }
 
 }

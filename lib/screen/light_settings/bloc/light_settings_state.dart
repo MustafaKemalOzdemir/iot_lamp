@@ -16,3 +16,11 @@ class LightSettingsDisplayColor extends LightSettingsState{
   @override
   List<Object?> get props => [color.value];
 }
+
+class LightSettingsDeviceManagerStateChange extends LightSettingsState {
+  final DeviceManagerState currentState;
+  const LightSettingsDeviceManagerStateChange(this.currentState);
+
+  @override
+  List<Object?> get props => [currentState];
+}
