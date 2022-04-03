@@ -22,6 +22,9 @@ class CallDecoderImpl extends CallDecoder {
         final blue = data[4];
         return DecodedCall(CallType.preview, Color.fromARGB(alpha, red, green, blue));
       }
+      case StationCommand.connectionCheck: {
+        return const DecodedCall(CallType.unknown, null);
+      }
       default: {
         return const DecodedCall(CallType.unknown, null);
       }

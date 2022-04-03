@@ -7,6 +7,7 @@ import 'package:iot_playground/core/enum/call_type.dart';
 import 'package:iot_playground/core/enum/connection_manager_state.dart';
 import 'package:iot_playground/core/enum/device_manager_message.dart';
 import 'package:iot_playground/core/enum/device_manager_state.dart';
+import 'package:iot_playground/core/enum/queue_manager_state.dart';
 import 'package:iot_playground/core/model/call_raw_response.dart';
 import 'package:iot_playground/core/model/call_request.dart';
 import 'package:iot_playground/core/model/machine_message.dart';
@@ -20,6 +21,7 @@ import 'package:statemachine/statemachine.dart';
 abstract class DeviceManager {
   void startMachine();
   void connect(String ip);
+  Future<VoidCallback> addConnectionCheckCall();
   Future<VoidCallback> addPreviewCall(PreviewData data);
   void registerStateChangeListener(String tag, Function(DeviceManagerState state) listener);
 }
@@ -62,6 +64,16 @@ class DeviceManagerImpl extends DeviceManagerBase implements DeviceManager {
   @override
   void startMachine() {
     machine.start();
+    _startConnectionChecker();
+  }
+
+  void _startConnectionChecker() {
+    Future.delayed(const Duration(seconds: 5), () {
+      if(queueManager.currentState == QueueManagerState.idle) {
+        addConnectionCheckCall();
+      }
+      _startConnectionChecker();
+    });
   }
 
   void setupIdle() {
@@ -221,6 +233,15 @@ class DeviceManagerImpl extends DeviceManagerBase implements DeviceManager {
   Future<VoidCallback> addPreviewCall(PreviewData data) async {
     final callback = Completer<CallRawResponse>();
     final request = CallRequest(CallType.preview, callback, data);
+    _dispatchMessage(DeviceManagerMessage.addCall, request);
+    final callResult = await callback.future;
+    return VoidCallback(callResult.isSuccessful);
+  }
+
+  @override
+  Future<VoidCallback> addConnectionCheckCall() async{
+    final callback = Completer<CallRawResponse>();
+    final request = CallRequest(CallType.connectionCheck, callback, null);
     _dispatchMessage(DeviceManagerMessage.addCall, request);
     final callResult = await callback.future;
     return VoidCallback(callResult.isSuccessful);

@@ -40,7 +40,7 @@ abstract class ConnectionManagerBase {
         }
       }
     });
-    Fluttertoast.showToast(msg: 'Socked init $ip');
+    print('Socked init $ip');
   }
 
   void onDataSent(bool isSuccessful);

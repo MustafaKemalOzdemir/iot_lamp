@@ -26,6 +26,9 @@ class OperationManagerImpl implements OperationManager {
         return _handlePreview(param as PreviewData);
       case CallType.unknown:
         return CallRawResponse.failed();
+      case CallType.connectionCheck:
+        return _handleConnectionCheck();
+        break;
     }
   }
 
@@ -33,6 +36,14 @@ class OperationManagerImpl implements OperationManager {
   Future<CallRawResponse> _handlePreview(PreviewData previewData) async{
     Completer<CallRawResponse> response = Completer();
     final bytes = callBuilder.buildPreview(previewData);
+    final request = CallRequestRaw(bytes, response);
+    connectionManager.requestCall(request);
+    return response.future;
+  }
+
+  Future<CallRawResponse> _handleConnectionCheck() async{
+    Completer<CallRawResponse> response = Completer();
+    final bytes = callBuilder.buildConnectionCheck();
     final request = CallRequestRaw(bytes, response);
     connectionManager.requestCall(request);
     return response.future;

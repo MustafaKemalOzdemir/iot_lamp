@@ -3,6 +3,8 @@
 */
 import 'dart:async';
 
+import 'package:iot_playground/core/enum/queue_manager_message.dart';
+import 'package:iot_playground/core/enum/queue_manager_state.dart';
 import 'package:iot_playground/core/model/call_raw_response.dart';
 import 'package:iot_playground/core/model/call_request.dart';
 import 'package:iot_playground/core/model/machine_message.dart';
@@ -14,6 +16,7 @@ import 'package:statemachine/statemachine.dart';
 abstract class QueueManager {
   void consume();
   void enqueueCall(CallRequest request);
+  QueueManagerState get currentState;
 }
 
 class QueueManagerImpl extends QueueManagerBase implements QueueManager {
@@ -29,6 +32,10 @@ class QueueManagerImpl extends QueueManagerBase implements QueueManager {
   late final Sink<MachineMessage<QueueManagerMessage>> _messengerSink;
 
   late MachineMessage<QueueManagerMessage> _currentMessage;
+  var _currentState = QueueManagerState.idle;
+
+  @override
+  QueueManagerState get currentState => _currentState;
 
   QueueManagerImpl({required this.operationManager}) {
     _machineMessengerSC = StreamController();
@@ -50,6 +57,7 @@ class QueueManagerImpl extends QueueManagerBase implements QueueManager {
   void setupIdle() {
     idle.onEntry(() {
       print('QM IDLE STATE ON ENTER');
+      _currentState = QueueManagerState.idle;
       Future.microtask(() async {
         if(await queueSize() > 0) {
           processing.enter();
@@ -79,6 +87,7 @@ class QueueManagerImpl extends QueueManagerBase implements QueueManager {
 
   void setupProcessing() {
     processing.onEntry(() {
+      _currentState = QueueManagerState.processing;
       Future.delayed(const Duration(milliseconds: 5), () async{
         final element = await peek();
         final response = await element.call.call();
@@ -109,10 +118,14 @@ class QueueManagerImpl extends QueueManagerBase implements QueueManager {
 
   void setupDispose() {
     dispose.onEntry(() {
+      _currentState = QueueManagerState.dispose;
       print('QM DISPOSE STATE ON ENTER');
       Future.microtask(() async{
         while(await queueSize() > 0) {
-          (await dequeue()).callback.complete(CallRawResponse.failed());
+          final element = await dequeue();
+          if(!element.callback.isCompleted) {
+            element.callback.complete(CallRawResponse.failed());
+          }
         }
         idle.enter();
       });
@@ -120,8 +133,7 @@ class QueueManagerImpl extends QueueManagerBase implements QueueManager {
     dispose.onStream(_messengerStream, (MachineMessage<QueueManagerMessage> message) {
       switch(message.flag) {
         case QueueManagerMessage.enqueue:
-          final request = message.obj as CallRequest;
-          request.callback.complete(CallRawResponse.failed());
+          _rejectCallInternal(message.obj as CallRequest);
           break;
         case QueueManagerMessage.consume:
           idle.enter();
@@ -156,15 +168,8 @@ class QueueManagerImpl extends QueueManagerBase implements QueueManager {
     enqueue(element);
   }
 
-}
+  void _rejectCallInternal(CallRequest request) {
+    request.callback.complete(CallRawResponse.failed());
+  }
 
-enum QueueManagerMessage {
-  consume,
-  enqueue
-}
-
-enum QueueManagerState {
-  idle,
-  processing,
-  dispose
 }

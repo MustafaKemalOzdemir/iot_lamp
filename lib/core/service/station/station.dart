@@ -16,7 +16,7 @@ class StationImpl implements Station {
 
   var isActive = false;
   StreamSubscription? _streamSubscription;
-  final _listeners = Map<String, Function(List<int>)>();
+  final _listeners = <String, Function(List<int>)>{};
 
   @override
   void start() async {
@@ -31,7 +31,6 @@ class StationImpl implements Station {
         if(data != null) {
           print('data received address ${data.address} port ${data.port} data size ${data.data.length}');
           Future.microtask(() {
-            Fluttertoast.showToast(msg: 'Packet received length: ${data.data.length}');
             print('Packet received length: ${data.data.length} data: ${data.data}');
             _notifyListeners(data.data);
             final sentDataLength = socket.send(data.data.sublist(0,2), data.address, data.port);
