@@ -4,5 +4,7 @@
 enum CallType {
   preview,
   connectionCheck,
+  discoverDevice,
+  discoverDeviceResponse,
   unknown
 }

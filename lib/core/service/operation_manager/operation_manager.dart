@@ -29,6 +29,12 @@ class OperationManagerImpl implements OperationManager {
       case CallType.connectionCheck:
         return _handleConnectionCheck();
         break;
+      case CallType.discoverDevice:
+        return CallRawResponse.failed();
+        break;
+      case CallType.discoverDeviceResponse:
+        return CallRawResponse.failed();
+        break;
     }
   }
 

@@ -4,7 +4,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:iot_playground/core/enum/connection_manager_state.dart';
 import 'package:iot_playground/core/model/call_raw_response.dart';
 

@@ -5,6 +5,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:iot_playground/core/call_decoder/call_decoder.dart';
+import 'package:iot_playground/core/enum/call_type.dart';
+import 'package:iot_playground/core/preference_manager/preference_manager.dart';
+import 'package:iot_playground/core/service/call_builder/call_builder.dart';
 
 abstract class Station {
   void start();
@@ -13,6 +17,10 @@ abstract class Station {
 }
 
 class StationImpl implements Station {
+  final CallDecoder callDecoder;
+  final PreferenceManager preferenceManager;
+  final CallBuilder callBuilder;
+  StationImpl(this.callDecoder, this.preferenceManager, this.callBuilder);
 
   var isActive = false;
   StreamSubscription? _streamSubscription;
@@ -32,8 +40,10 @@ class StationImpl implements Station {
           print('data received address ${data.address} port ${data.port} data size ${data.data.length}');
           Future.microtask(() {
             print('Packet received length: ${data.data.length} data: ${data.data}');
+            _evaluateReceivedDatagram(data).then((responseBytes) {
+              socket.send(responseBytes, data.address, data.port);
+            });
             _notifyListeners(data.data);
-            final sentDataLength = socket.send(data.data.sublist(0,2), data.address, data.port);
           });
         }else {
           print('data is null');
@@ -61,6 +71,13 @@ class StationImpl implements Station {
     }
   }
 
-
+  Future<List<int>> _evaluateReceivedDatagram(Datagram datagram) async {
+    final decodedCall = callDecoder.decodeCall(datagram.data);
+    if(decodedCall.flag == CallType.discoverDevice) {
+      final stationName = await preferenceManager.readStationName();
+      return callBuilder.buildDiscoverResponse(stationName);
+    }
+    return datagram.data;
+  }
 
 }

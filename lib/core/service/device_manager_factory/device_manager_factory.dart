@@ -9,8 +9,12 @@ import 'package:iot_playground/core/service/queue_manager/queue_manager.dart';
 
 abstract class DeviceManagerFactory {
   DeviceManager constructDeviceManager();
+  DeviceManager constructManagerWithIp(String ip);
+  DeviceManager? getManagerWithIp(String ip);
 }
 class DeviceManagerFactoryImpl implements DeviceManagerFactory {
+
+  final _managers = <String, DeviceManager>{};
 
   @override
   DeviceManager constructDeviceManager() {
@@ -20,6 +24,23 @@ class DeviceManagerFactoryImpl implements DeviceManagerFactory {
     final QueueManager queueManager = QueueManagerImpl(operationManager: operationManager);
     final DeviceManager deviceManager = DeviceManagerImpl(queueManager: queueManager, connectionManager: connectionManager);
     return deviceManager;
+  }
+
+  @override
+  DeviceManager constructManagerWithIp(String ip) {
+    final manager = _managers[ip];
+    if(manager == null) {
+      final generated = constructDeviceManager();
+      _managers[ip] = generated;
+      return generated;
+    }else {
+      return manager;
+    }
+  }
+
+  @override
+  DeviceManager? getManagerWithIp(String ip) {
+    return _managers[ip];
   }
 
 }
