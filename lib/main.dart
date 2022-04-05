@@ -1,56 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iot_playground/core/di/injection_container.dart';
-import 'package:iot_playground/screen/light_settings/light_settings.dart';
-import 'package:iot_playground/screen/station/station_page.dart';
-
+import 'package:iot_playground/core/router/app_router.dart';
+import 'package:iot_playground/core/router/app_routes.dart';
 void main() {
   initializeDi();
+  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.blue, // navigation bar color
+    statusBarColor: Colors.grey.shade50, // status bar color
+  ));
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
-
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'Flutter IoT Demo',
       theme: ThemeData(
-        primarySwatch: Colors.teal,
-      ),
-      home: const HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton(
-              child: const Text('Host'),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => const LightSettings()));
-              },
-            ),
-            const SizedBox(height: 5),
-            ElevatedButton(
-              child: const Text('Station'),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => const StationPage()));
-              },
-            ),
-          ],
+        appBarTheme: const AppBarTheme(
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
         ),
+        fontFamily: 'CeraRound',
+        primarySwatch: Colors.blue,
       ),
+      onGenerateRoute: AppRouter.onGenerateRoute,
+      initialRoute: AppRoutes.home,
     );
   }
 }
+

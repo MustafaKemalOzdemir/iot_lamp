@@ -3,5 +3,9 @@
 */
 enum CallType {
   preview,
+  connectionCheck,
+  discoverDevice,
+  discoverDeviceResponse,
+  writeDeviceName,
   unknown
 }

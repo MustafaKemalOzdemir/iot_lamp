@@ -4,7 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:iot_playground/core/enum/connection_manager_state.dart';
 import 'package:iot_playground/core/model/call_raw_response.dart';
 
 class NoDatagramAvailableException implements Exception {}
@@ -18,8 +18,10 @@ abstract class ConnectionManagerBase {
   String? _targetAddress;
   final _targetPort = 6666;
   String get targetAddress => _targetAddress!;
+  String? get targetAddressNullable => _targetAddress;
 
   Completer<CallRawResponse>? _callResponseCompleter;
+  final _stateChangeListeners = <String, Function(ConnectionManagerState state)>{};
 
   initializeSocket(String ip) async{
     _targetAddress = ip;
@@ -38,7 +40,7 @@ abstract class ConnectionManagerBase {
         }
       }
     });
-    Fluttertoast.showToast(msg: 'Socked init $ip');
+    print('Socked init $ip');
   }
 
   void onDataSent(bool isSuccessful);
@@ -46,6 +48,9 @@ abstract class ConnectionManagerBase {
   void _onStreamReceive(Datagram datagram) {
     if(_targetAddress != null && _targetAddress == datagram.address.address && _currentData != null) {
       final response = datagram.data;
+      if(_callResponseCompleter?.isCompleted ?? false) {
+        return;
+      }
       if(response.length < 2) {
         print('Response length exception');
         _callResponseCompleter?.complete(CallRawResponse.failed());
@@ -80,6 +85,16 @@ abstract class ConnectionManagerBase {
   void resetData() {
     _currentData = null;
     _callResponseCompleter = null;
+  }
+
+  void registerStateListenerBase(String tag, Function(ConnectionManagerState state) listener) {
+    _stateChangeListeners[tag] = listener;
+  }
+
+  void notifyStateChange(ConnectionManagerState current) {
+    _stateChangeListeners.forEach((key, value) {
+      value.call(current);
+    });
   }
 
 }

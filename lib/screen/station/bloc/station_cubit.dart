@@ -34,6 +34,8 @@ class StationCubit extends Cubit<StationState> {
       case CallType.unknown:
         Fluttertoast.showToast(msg: 'Unknown call');
         break;
+      case CallType.connectionCheck:
+        break;
     }
   }
 
