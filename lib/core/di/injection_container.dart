@@ -17,11 +17,11 @@ final sl = GetIt.instance;
 void initializeDi() {
   sl.registerLazySingleton<Station>(() => StationImpl(sl.get(), sl.get(), sl.get()));
   sl.registerLazySingleton<CallDecoder>(() => CallDecoderImpl());
-  sl.registerLazySingleton<DeviceManagerFactory>(() => DeviceManagerFactoryImpl());
+  sl.registerSingleton<DeviceManagerFactory>(DeviceManagerFactoryImpl());
 
   sl.registerSingleton<PreferenceManager>(PreferenceManagerImpl());
   sl.registerLazySingleton<CallBuilder>(() => CallBuilderImpl());
-  sl.registerLazySingleton<DeviceDiscoverService>(() => DeviceDiscoverServiceImpl(sl.get(), sl.get()));
+  sl.registerLazySingleton<DeviceDiscoverService>(() => DeviceDiscoverServiceImpl(sl.get(), sl.get(), sl.get()));
 
   //bloc
   sl.registerFactory(() => LightSettingsCubit());

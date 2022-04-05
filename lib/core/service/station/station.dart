@@ -76,6 +76,8 @@ class StationImpl implements Station {
     if(decodedCall.flag == CallType.discoverDevice) {
       final stationName = await preferenceManager.readStationName();
       return callBuilder.buildDiscoverResponse(stationName);
+    }else if(decodedCall.flag == CallType.writeDeviceName) {
+      await preferenceManager.writeStationName(decodedCall.obj as String);
     }
     return datagram.data;
   }

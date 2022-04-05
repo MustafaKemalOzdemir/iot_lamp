@@ -19,51 +19,54 @@ class _StationPageState extends State<StationPage> {
   final _station = sl.get<Station>();
 
   @override
+  void initState() {
+    _station.start();
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => sl.get<StationCubit>()..initialize(),
       child: Scaffold(
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(width: double.infinity),
-            BlocBuilder<StationCubit, StationState>(
-              buildWhen: (p, n) => n is StationDisplayColor,
-              builder: (context, state) {
-                late Color color;
-                if(state is StationDisplayColor) {
-                  color = state.color;
-                }else {
-                  color = BlocProvider.of<StationCubit>(context).currentColor;
-                }
-                return Container(
-                  width: 300,
-                  height: 300,
-                  color: color,
-                );
-              },
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ElevatedButton(
-                  child: const Text('Start'),
-                  onPressed: () {
-                    _station.start();
-                  },
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(width: double.infinity),
+              const Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  child: Text('Device Interface', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold)),
                 ),
-                const SizedBox(width: 5),
-                ElevatedButton(
-                  child: const Text('Stop'),
-                  onPressed: () {
-                    _station.stop();
-                  },
+              ),
+              Expanded(
+                child: Center(
+                  child: BlocBuilder<StationCubit, StationState>(
+                    buildWhen: (p, n) => n is StationDisplayColor,
+                    builder: (context, state) {
+                      late Color color;
+                      if(state is StationDisplayColor) {
+                        color = state.color;
+                      }else {
+                        color = BlocProvider.of<StationCubit>(context).currentColor;
+                      }
+                      return Container(
+                        width: 300,
+                        height: 300,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color,
+                        ),
+
+                      );
+                    },
+                  ),
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

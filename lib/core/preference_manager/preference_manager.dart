@@ -20,7 +20,7 @@ class PreferenceManagerImpl implements PreferenceManager {
   @override
   Future<String> readStationName() async{
     final instance = await SharedPreferences.getInstance();
-    return instance.getString(deviceNameKey) ?? 'Unknown';
+    return instance.getString(deviceNameKey) ?? 'Gemini';
   }
 
 }

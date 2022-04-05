@@ -21,9 +21,13 @@ import 'package:statemachine/statemachine.dart';
 abstract class DeviceManager {
   void startMachine();
   void connect(String ip);
+  void stop();
+  void resume();
   Future<VoidCallback> addConnectionCheckCall();
   Future<VoidCallback> addPreviewCall(PreviewData data);
+  Future<VoidCallback> addWriteDeviceNameCall(String deviceName);
   void registerStateChangeListener(String tag, Function(DeviceManagerState state) listener);
+  void unregisterStateChangeListener(String tag);
 }
 
 class DeviceManagerImpl extends DeviceManagerBase implements DeviceManager {
@@ -34,6 +38,7 @@ class DeviceManagerImpl extends DeviceManagerBase implements DeviceManager {
   late State<DeviceManagerState> disconnected;
   final QueueManager queueManager;
   final ConnectionManager connectionManager;
+  bool _isConnectionCheckerAlive = false;
 
   late final StreamController<MachineMessage<DeviceManagerMessage>> _machineMessengerSC;
   late final Stream<MachineMessage<DeviceManagerMessage>> _messengerStream;
@@ -63,17 +68,29 @@ class DeviceManagerImpl extends DeviceManagerBase implements DeviceManager {
 
   @override
   void startMachine() {
-    machine.start();
-    _startConnectionChecker();
+    if(machine.current == null) {
+      machine.start();
+    }
   }
 
   void _startConnectionChecker() {
+    _isConnectionCheckerAlive = true;
+    _connectionCheck();
+  }
+
+  void _connectionCheck() async {
     Future.delayed(const Duration(seconds: 5), () {
-      if(queueManager.currentState == QueueManagerState.idle) {
-        addConnectionCheckCall();
+      if(_isConnectionCheckerAlive) {
+        if(queueManager.currentState == QueueManagerState.idle) {
+          addConnectionCheckCall();
+        }
+        _connectionCheck();
       }
-      _startConnectionChecker();
     });
+  }
+
+  void _stopConnectionChecker() {
+    _isConnectionCheckerAlive = false;
   }
 
   void setupIdle() {
@@ -99,6 +116,8 @@ class DeviceManagerImpl extends DeviceManagerBase implements DeviceManager {
             case ConnectionManagerState.connected:
               break;
             case ConnectionManagerState.disconnected:
+              break;
+            case ConnectionManagerState.stop:
               break;
           }
           break;
@@ -133,12 +152,15 @@ class DeviceManagerImpl extends DeviceManagerBase implements DeviceManager {
             case ConnectionManagerState.disconnected:
               disconnected.enter();
               break;
+            case ConnectionManagerState.stop:
+              break;
           }
           break;
       }
     });
     connecting.onExit(() {
       print("DM CONNECTING ON EXIT");
+      _startConnectionChecker();
     });
   }
 
@@ -165,12 +187,15 @@ class DeviceManagerImpl extends DeviceManagerBase implements DeviceManager {
             case ConnectionManagerState.disconnected:
               disconnected.enter();
               break;
+            case ConnectionManagerState.stop:
+              break;
           }
           break;
       }
     });
     connected.onExit(() {
       print("DM CONNECTED ON EXIT");
+      _stopConnectionChecker();
     });
   }
 
@@ -196,6 +221,8 @@ class DeviceManagerImpl extends DeviceManagerBase implements DeviceManager {
             case ConnectionManagerState.connected:
               break;
             case ConnectionManagerState.disconnected:
+              break;
+            case ConnectionManagerState.stop:
               break;
           }
           break;
@@ -248,8 +275,32 @@ class DeviceManagerImpl extends DeviceManagerBase implements DeviceManager {
   }
 
   @override
+  Future<VoidCallback> addWriteDeviceNameCall(String deviceName) async{
+    final callback = Completer<CallRawResponse>();
+    final request = CallRequest(CallType.writeDeviceName, callback, deviceName);
+    _dispatchMessage(DeviceManagerMessage.addCall, request);
+    final callResult = await callback.future;
+    return VoidCallback(callResult.isSuccessful);
+  }
+
+  @override
   void registerStateChangeListener(String tag, Function(DeviceManagerState state) listener) {
     registerStateChangeListenerBase(tag, listener);
+  }
+
+ @override
+  void unregisterStateChangeListener(String tag) {
+    unregisterListener(tag);
+  }
+
+  @override
+  void stop() {
+    connectionManager.stopMachine();
+  }
+
+  @override
+  void resume() {
+    connectionManager.resumeMachine();
   }
 
 }

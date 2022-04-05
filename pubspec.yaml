@@ -60,9 +60,25 @@ dev_dependencies:
 
 # The following section is specific to Flutter.
 flutter:
+  fonts:
+    - family: CeraRound
+      fonts:
+        - asset: fonts/CeraRoundProThin.otf
+          weight: 200
+        - asset: fonts/CeraRoundProLight.otf
+          weight: 300
+        - asset: fonts/CeraRoundProRegular.otf
+          weight: 400
+        - asset: fonts/CeraRoundProMedium.otf
+          weight: 500
+        - asset: fonts/CeraRoundProBold.otf
+          weight: 700
+  assets:
+    - assets/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
 

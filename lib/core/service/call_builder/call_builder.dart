@@ -9,6 +9,7 @@ abstract class CallBuilder {
   List<int> buildConnectionCheck();
   List<int> buildDiscoverDevices();
   List<int> buildDiscoverResponse(String stationName);
+  List<int> buildWriteDeviceName(String deviceName);
 
 }
 
@@ -33,6 +34,13 @@ class CallBuilderImpl implements CallBuilder {
   List<int> buildDiscoverResponse(String stationName) {
     final bytes = <int>[StationCommand.discoverResponse];
     bytes.addAll(stationName.codeUnits);
+    return bytes;
+  }
+
+  @override
+  List<int> buildWriteDeviceName(String deviceName) {
+    final bytes = <int>[StationCommand.writeName];
+    bytes.addAll(deviceName.codeUnits);
     return bytes;
   }
 

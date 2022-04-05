@@ -18,6 +18,7 @@ abstract class ConnectionManagerBase {
   String? _targetAddress;
   final _targetPort = 6666;
   String get targetAddress => _targetAddress!;
+  String? get targetAddressNullable => _targetAddress;
 
   Completer<CallRawResponse>? _callResponseCompleter;
   final _stateChangeListeners = <String, Function(ConnectionManagerState state)>{};
@@ -47,6 +48,9 @@ abstract class ConnectionManagerBase {
   void _onStreamReceive(Datagram datagram) {
     if(_targetAddress != null && _targetAddress == datagram.address.address && _currentData != null) {
       final response = datagram.data;
+      if(_callResponseCompleter?.isCompleted ?? false) {
+        return;
+      }
       if(response.length < 2) {
         print('Response length exception');
         _callResponseCompleter?.complete(CallRawResponse.failed());

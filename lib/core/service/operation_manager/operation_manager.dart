@@ -28,16 +28,14 @@ class OperationManagerImpl implements OperationManager {
         return CallRawResponse.failed();
       case CallType.connectionCheck:
         return _handleConnectionCheck();
-        break;
       case CallType.discoverDevice:
         return CallRawResponse.failed();
-        break;
       case CallType.discoverDeviceResponse:
         return CallRawResponse.failed();
-        break;
+      case CallType.writeDeviceName:
+        return _handleWriteDeviceName(param as String);
     }
   }
-
 
   Future<CallRawResponse> _handlePreview(PreviewData previewData) async{
     Completer<CallRawResponse> response = Completer();
@@ -50,6 +48,14 @@ class OperationManagerImpl implements OperationManager {
   Future<CallRawResponse> _handleConnectionCheck() async{
     Completer<CallRawResponse> response = Completer();
     final bytes = callBuilder.buildConnectionCheck();
+    final request = CallRequestRaw(bytes, response);
+    connectionManager.requestCall(request);
+    return response.future;
+  }
+
+  Future<CallRawResponse> _handleWriteDeviceName(String deviceName) async{
+    Completer<CallRawResponse> response = Completer();
+    final bytes = callBuilder.buildWriteDeviceName(deviceName);
     final request = CallRequestRaw(bytes, response);
     connectionManager.requestCall(request);
     return response.future;

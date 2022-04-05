@@ -6,4 +6,6 @@ class StationCommand {
   static const writeColor = 0x11;
   static const discoverDevice = 0x12;
   static const discoverResponse = 0x13;
+  static const readColor = 0x14;
+  static const writeName = 0x15;
 }

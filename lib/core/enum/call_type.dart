@@ -6,5 +6,6 @@ enum CallType {
   connectionCheck,
   discoverDevice,
   discoverDeviceResponse,
+  writeDeviceName,
   unknown
 }

@@ -18,7 +18,8 @@ abstract class ConnectionManager {
   void connect(String ip);
   void requestCall(CallRequestRaw request);
   void registerStateChangeListener(String tag, Function(ConnectionManagerState state) listener);
-
+  void stopMachine();
+  void resumeMachine();
 }
 
 class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionManager {
@@ -27,7 +28,7 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
   late final State<ConnectionManagerState> connecting;
   late final State<ConnectionManagerState> connected;
   late final State<ConnectionManagerState> disconnected;
-  late final State<ConnectionManagerState> processing;
+  late final State<ConnectionManagerState> stop;
   late final StreamController<MachineMessage<ConnectionManagerMessage>> _machineMessengerSC;
   late final Stream<MachineMessage<ConnectionManagerMessage>> _messengerStream;
   late final Sink<MachineMessage<ConnectionManagerMessage>> _messengerSink;
@@ -46,13 +47,13 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
     connecting = machine.newState(ConnectionManagerState.connecting);
     connected = machine.newState(ConnectionManagerState.connected);
     disconnected = machine.newState(ConnectionManagerState.disconnected);
-   // processing = machine.newState(ConnectionManagerState.processing);
+    stop = machine.newState(ConnectionManagerState.stop);
 
     setupIdle();
     setupConnecting();
     setupConnected();
     setupDisconnected();
-    //setupProcessing();
+    setupStop();
 
     machine.start();
   }
@@ -75,7 +76,12 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
         case ConnectionManagerMessage.disconnect:
           break;
         case ConnectionManagerMessage.send:
-          denyCallRequest(message as CallRequestRaw);
+          denyCallRequest(message.obj as CallRequestRaw);
+          break;
+        case ConnectionManagerMessage.stop:
+          stop.enter();
+          break;
+        case ConnectionManagerMessage.resume:
           break;
       }
     });
@@ -121,7 +127,12 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
         case ConnectionManagerMessage.disconnect:
           break;
         case ConnectionManagerMessage.send:
-          denyCallRequest(message as CallRequestRaw);
+          denyCallRequest(message.obj as CallRequestRaw);
+          break;
+        case ConnectionManagerMessage.stop:
+          stop.enter();
+          break;
+        case ConnectionManagerMessage.resume:
           break;
       }
     });
@@ -146,6 +157,11 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
         //callback -> CallRawResponse
           final request = message.obj as CallRequestRaw;
           trySend(request);
+          break;
+        case ConnectionManagerMessage.stop:
+          stop.enter();
+          break;
+        case ConnectionManagerMessage.resume:
           break;
       }
     });
@@ -195,12 +211,48 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
         case ConnectionManagerMessage.disconnect:
           break;
         case ConnectionManagerMessage.send:
-          denyCallRequest(message as CallRequestRaw);
+          denyCallRequest(message.obj as CallRequestRaw);
+          break;
+        case ConnectionManagerMessage.stop:
+          stop.enter();
+          break;
+        case ConnectionManagerMessage.resume:
           break;
       }
     });
     disconnected.onExit(() {
       print('CM DISCONNECTED STATE ON EXIT');
+    });
+  }
+
+  void setupStop() {
+    stop.onEntry(() {
+      print('CM STOP STATE ON ENTER');
+      notifyStateChange(ConnectionManagerState.stop);
+      close();
+    });
+    stop.onStream(_messengerStream, (MachineMessage<ConnectionManagerMessage> message) {
+      switch (message.flag) {
+        case ConnectionManagerMessage.connect:
+          break;
+        case ConnectionManagerMessage.disconnect:
+          break;
+        case ConnectionManagerMessage.send:
+          denyCallRequest(message.obj as CallRequestRaw);
+          break;
+        case ConnectionManagerMessage.stop:
+          break;
+        case ConnectionManagerMessage.resume:
+          if(targetAddressNullable != null) {
+            connecting.enter();
+          }else {
+            idle.enter();
+          }
+          break;
+      }
+    });
+    stop.onExit(() {
+      print('CM STOP STATE ON EXIT');
     });
   }
 
@@ -241,8 +293,6 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
   @override
   void onDataSent(bool isSuccessful) {
     print('ON DATA SENT STATE: $isSuccessful');
-    //Fluttertoast.showToast(msg: 'on data sent $isSuccessful');
-    //_dispatchMessage(ConnectionManagerMessage.dataSent, isSuccessful);
   }
 
   @override
@@ -253,6 +303,16 @@ class ConnectionManagerImpl extends ConnectionManagerBase implements ConnectionM
   @override
   void registerStateChangeListener(String tag, Function(ConnectionManagerState state) listener) {
     registerStateListenerBase(tag, listener);
+  }
+
+  @override
+  void stopMachine() {
+    _dispatchMessage(ConnectionManagerMessage.stop, null);
+  }
+
+  @override
+  void resumeMachine() {
+    _dispatchMessage(ConnectionManagerMessage.resume, null);
   }
 
 }

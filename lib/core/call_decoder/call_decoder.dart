@@ -32,6 +32,9 @@ class CallDecoderImpl extends CallDecoder {
       case StationCommand.discoverResponse: {
         return DecodedCall(CallType.discoverDeviceResponse, utf8.decode(data.sublist(1)));
       }
+      case StationCommand.writeName: {
+        return DecodedCall(CallType.writeDeviceName, utf8.decode(data.sublist(1)));
+      }
       default: {
         return const DecodedCall(CallType.unknown, null);
       }

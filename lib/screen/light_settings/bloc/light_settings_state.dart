@@ -24,3 +24,11 @@ class LightSettingsDeviceManagerStateChange extends LightSettingsState {
   @override
   List<Object?> get props => [currentState];
 }
+
+class LightSettingsDisplayDeviceName extends LightSettingsState {
+  final String deviceName;
+  const LightSettingsDisplayDeviceName(this.deviceName);
+
+  @override
+  List<Object?> get props => [deviceName];
+}

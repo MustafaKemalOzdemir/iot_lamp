@@ -11,6 +11,8 @@ abstract class DeviceManagerFactory {
   DeviceManager constructDeviceManager();
   DeviceManager constructManagerWithIp(String ip);
   DeviceManager? getManagerWithIp(String ip);
+  void stopManagers();
+  void resumeManagers();
 }
 class DeviceManagerFactoryImpl implements DeviceManagerFactory {
 
@@ -31,6 +33,10 @@ class DeviceManagerFactoryImpl implements DeviceManagerFactory {
     final manager = _managers[ip];
     if(manager == null) {
       final generated = constructDeviceManager();
+      generated.startMachine();
+      Future.delayed(const Duration(seconds: 1), () {
+        generated.connect(ip);
+      });
       _managers[ip] = generated;
       return generated;
     }else {
@@ -41,6 +47,20 @@ class DeviceManagerFactoryImpl implements DeviceManagerFactory {
   @override
   DeviceManager? getManagerWithIp(String ip) {
     return _managers[ip];
+  }
+
+  @override
+  void stopManagers() {
+    for (var element in _managers.values) {
+      element.stop();
+    }
+  }
+
+  @override
+  void resumeManagers() {
+    for (var element in _managers.values) {
+    element.resume();
+    }
   }
 
 }

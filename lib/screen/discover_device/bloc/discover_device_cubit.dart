@@ -8,9 +8,20 @@ part 'discover_device_state.dart';
 class DiscoverDeviceCubit extends Cubit<DiscoverDeviceState> {
   final DeviceDiscoverService discoverService;
   DiscoverDeviceCubit(this.discoverService) : super(DiscoverDeviceInitial());
+  DiscoveredDevice? _selectedDevice;
 
-  void discoverDevices() async{
-    final discoveredDevices = await discoverService.discoverDevices();
-    emit(DiscoverDeviceDisplayDevices(discoveredDevices));
+  void discoverDevices([Duration delay = Duration.zero]) async{
+    Future.delayed(delay, () async{
+      final discoveredDevices = await discoverService.discoverDevices();
+      emit(DiscoverDeviceDisplayDevices(discoveredDevices));
+    });
   }
+
+  void deviceSelected(DiscoveredDevice device) {
+    if(_selectedDevice != device) {
+      _selectedDevice = device;
+      emit(DiscoverDeviceDeviceSelected(device));
+    }
+  }
+
 }

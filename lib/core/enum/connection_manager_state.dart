@@ -5,5 +5,6 @@ enum ConnectionManagerState {
   idle,
   connecting,
   connected,
-  disconnected
+  disconnected,
+  stop,
 }
